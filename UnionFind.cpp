@@ -1,88 +1,84 @@
 #include <iostream>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
+#include <chrono>
 
-class UnionFind {
+class UnionFind
+{
 private:
     std::unordered_map<int, int> parent;
 
 public:
-    // Function to add a set with a single element
-    void makeSet(int symbol) {
-        if (parent.find(symbol) == parent.end()) {
+    void makeSet(int symbol)
+    {
+        if (parent.find(symbol) == parent.end())
+        {
             parent[symbol] = symbol;
         }
     }
 
-    // Function to find the representative of a set (with path compression)
-    int find(int symbol) {
-        if (parent[symbol] != symbol) {
-            parent[symbol] = find(parent[symbol]);  // Path compression
+    int find(int symbol)
+    {
+        if (parent[symbol] != symbol)
+        {
+            parent[symbol] = find(parent[symbol]); // Path compression
         }
         return parent[symbol];
     }
 
-    // Function to union two sets
-    void unionSets(int symbol1, int symbol2) {
+    void unionSets(int symbol1, int symbol2)
+    {
         int root1 = find(symbol1);
         int root2 = find(symbol2);
 
-        if (root1 != root2) {
+        if (root1 != root2)
+        {
             parent[root1] = root2;
         }
     }
 
-    // Getter for the parent map
-    const std::unordered_map<int, int>& getParentMap() const {
+    const std::unordered_map<int, int> &getParentMap() const
+    {
         return parent;
     }
 };
 
-class DominoChainFinder {
-private:
+// Function to measure the time usage for finding a chain
+void measureFindChainTime(const std::vector<int> &dataset)
+{
     UnionFind unionFind;
 
-public:
-    // Function to add a domino to the chain
-    void addDomino(int symbol1, int symbol2) {
-        unionFind.makeSet(symbol1);
-        unionFind.makeSet(symbol2);
-        unionFind.unionSets(symbol1, symbol2);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (size_t i = 0; i < dataset.size(); i += 2)
+    {
+        unionFind.makeSet(dataset[i]);
+        unionFind.makeSet(dataset[i + 1]);
+        unionFind.unionSets(dataset[i], dataset[i + 1]);
     }
 
-    // Function to find a chain starting from a given domino
-    std::vector<int> findChain(int startSymbol) {
-        std::vector<int> chain;
-        int root = unionFind.find(startSymbol);
-
-        for (const auto& entry : unionFind.getParentMap()) {
-            if (unionFind.find(entry.first) == root) {
-                chain.push_back(entry.first);
-            }
-        }
-
-        return chain;
+    // Choose a specific domino as the starting point
+    std::vector<int> chain;
+    for (const auto &entry : unionFind.getParentMap())
+    {
+        chain.push_back(entry.second);
     }
-};
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-int main() {
-    // Example usage
-    DominoChainFinder dominoChainFinder;
+    std::cout << "Dataset Size: " << dataset.size() / 2 << ", Time: " << duration.count() << " microseconds\n";
+}
 
-    // Add dominoes to the chain
-    dominoChainFinder.addDomino(1, 2);
-    dominoChainFinder.addDomino(2, 3);
-    dominoChainFinder.addDomino(3, 4);
-    dominoChainFinder.addDomino(4, 5);
+int main()
+{
+    // Example dataset sizes
+    std::vector<int> dataset1 = {1, 2, 2, 3, 3, 4, 4, 5};
+    std::vector<int> dataset2 = {1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9};
 
-    // Find a chain starting from a specific domino
-    std::vector<int> chain = dominoChainFinder.findChain(1);
-
-    // Print the chain
-    std::cout << "Domino Chain: ";
-    for (int symbol : chain) {
-        std::cout << symbol << " ";
-    }
+    // Measure the time for finding a chain with different dataset sizes
+    measureFindChainTime(dataset1);
+    measureFindChainTime(dataset2);
 
     return 0;
 }
