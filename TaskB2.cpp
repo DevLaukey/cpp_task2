@@ -120,8 +120,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    
-
     DominoLine line(argv[1], argv[2]);
 
     // Interleaved steps of moving to the right and left
