@@ -1,69 +1,74 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <algorithm>
 
-class TaskB1
+class Dominoes
 {
 private:
-    std::unordered_map<int, std::vector<int>> adjacencyList;
+    std::vector<std::pair<int, int>> dominoes;
 
 public:
-    // Function to add a domino to the chain
-    void addDomino(int symbol1, int symbol2)
+    // Add a domino to the collection
+    void addDomino(int end1, int end2)
     {
-        adjacencyList[symbol1].push_back(symbol2);
-        adjacencyList[symbol2].push_back(symbol1);
+        dominoes.push_back({end1, end2});
     }
 
-    // Function to find a chain starting from a given domino
-    std::vector<int> findChain(int startSymbol)
+    // Find the length of the longest chain of dominoes
+    int longestChain()
     {
-        std::vector<int> chain;
-        std::unordered_map<int, bool> visited;
+        // Sort the dominoes based on the second end only (more efficient)
+        std::sort(dominoes.begin(), dominoes.end(), [](const auto &a, const auto &b)
+                  { return a.second < b.second; });
 
-        dfs(startSymbol, chain, visited);
+        int n = dominoes.size();
+        std::vector<int> dp(n, 1);
 
-        return chain;
-    }
-
-private:
-    // Depth-First Search to find a chain
-    void dfs(int currentSymbol, std::vector<int> &chain, std::unordered_map<int, bool> &visited)
-    {
-        visited[currentSymbol] = true;
-        chain.push_back(currentSymbol);
-
-        for (int neighbor : adjacencyList[currentSymbol])
+        // Dynamic programming to find the longest chain
+        for (int i = 1; i < n; ++i)
         {
-            if (!visited[neighbor])
+            for (int j = 0; j < i; ++j)
             {
-                dfs(neighbor, chain, visited);
+                if (dominoes[i].first > dominoes[j].second)
+                {
+                    dp[i] = std::max(dp[i], dp[j] + 1);
+                }
             }
         }
+
+        // Find the maximum length in the dp array
+        int maxLength = *std::max_element(dp.begin(), dp.end());
+
+        // Print the dominos in the longest chain
+        std::cout << "Dominos in the longest chain: ";
+        for (int i = n - 1; i >= 0; --i)
+        {
+            if (dp[i] == maxLength)
+            {
+                std::cout << "(" << dominoes[i].first << ", " << dominoes[i].second << ") ";
+                --maxLength;
+            }
+        }
+        std::cout << std::endl;
+
+        return *std::max_element(dp.begin(), dp.end());
     }
 };
 
 int main()
 {
-    // Example usage
-    TaskB1 dominoChainFinder;
+    Dominoes dominoCollection;
 
-    // Add dominoes to the chain
-    dominoChainFinder.addDomino(1, 2);
-    dominoChainFinder.addDomino(2, 3);
-    dominoChainFinder.addDomino(3, 4);
-    dominoChainFinder.addDomino(4, 5);
+    // Add dominoes to the collection
+    dominoCollection.addDomino(1, 2);
+    dominoCollection.addDomino(5, 3);
+    dominoCollection.addDomino(4, 8);
+    dominoCollection.addDomino(7, 6);
+    dominoCollection.addDomino(9, 10);
 
-    // Find a chain starting from a specific domino
-    std::vector<int> chain = dominoChainFinder.findChain(1);
-
-    // Print the chain
-    std::cout << "Domino Chain: ";
-    for (int symbol : chain)
-    {
-        std::cout << symbol << " ";
-    }
+    // Find and print the length of the longest chain
+    int maxLength = dominoCollection.longestChain();
+    std::cout << "Length of the longest chain: " << maxLength << std::endl;
 
     return 0;
 }

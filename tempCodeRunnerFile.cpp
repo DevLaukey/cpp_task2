@@ -17,7 +17,7 @@ public:
     // Find the length of the longest chain of dominoes
     int longestChain()
     {
-        // Sort the dominoes based on both ends (worst-case guarantees)
+        // Sort the dominoes based on both ends
         std::sort(dominoes.begin(), dominoes.end(), [](const auto &a, const auto &b)
                   { return std::min(a.first, a.second) < std::min(b.first, b.second); });
 
