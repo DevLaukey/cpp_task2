@@ -1,77 +1,99 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <unordered_map>
 
 class DominoLine
 {
 private:
-    std::vector<int> dominoes;
+    std::vector<std::pair<std::string, std::string>> dominoes;
     int currentIndex;
     bool directionRight;
+    std::unordered_map<std::string, int> nextDominoMap;
 
 public:
-    DominoLine(int startingDomino, const std::vector<int> &restOfDominoes, bool directionRight = true)
+    DominoLine(const std::vector<std::pair<std::string, std::string>> &dominoPairs, bool directionRight = true)
+        : dominoes(dominoPairs.size()), currentIndex(0), directionRight(directionRight)
     {
-        dominoes.push_back(startingDomino);
-        dominoes.insert(dominoes.end(), restOfDominoes.begin(), restOfDominoes.end());
-        currentIndex = 0;
-        this->directionRight = directionRight;
+        std::copy(dominoPairs.begin(), dominoPairs.end(), dominoes.begin());
+        buildNextDominoMap();
     }
 
-    int getNextDomino()
+    std::pair<std::string, std::string> getNextDomino()
     {
         if (currentIndex < dominoes.size())
         {
-            int nextDomino = dominoes[currentIndex];
-            int matchingSide = directionRight ? nextDomino : dominoes[currentIndex - 1];
-            int nextIndex = -1;
-
-            for (int i = 0; i < dominoes.size(); ++i)
+            std::string nextDomino = dominoes[currentIndex].second;
+            int nextDominoIndex = nextDominoMap[nextDomino];
+            if (nextDominoIndex >= 0)
             {
-                if (dominoes[i] == matchingSide)
-                {
-                    nextIndex = i;
-                    break;
-                }
-            }
-
-            if (nextIndex >= 0)
-            {
-                std::swap(dominoes[currentIndex], dominoes[nextIndex]);
+                std::swap(dominoes[currentIndex], dominoes[nextDominoIndex]);
                 directionRight = !directionRight;
                 currentIndex++;
                 return dominoes[currentIndex - 1];
             }
         }
-        return -1;
+        return {"", ""}; // Return an empty pair if the line is completed
     }
 
-    bool isLineCompleted()
+    bool isLineCompleted() const
     {
         return currentIndex == dominoes.size();
     }
 
-    void displayLine()
+    void displayLine() const
     {
-        for (int i = 0; i < dominoes.size(); ++i)
+        for (const auto &dominoPair : dominoes)
         {
-            std::cout << dominoes[i] << " ";
+            std::cout << dominoPair.first << ":" << dominoPair.second << " ";
         }
         std::cout << std::endl;
     }
-};
 
-int main()
-{
-    DominoLine line(1, {2, 3, 4, 5, 6, 7, 8, 9, 10});
-    while (!line.isLineCompleted())
+private:
+    void buildNextDominoMap()
     {
-        int nextDomino = line.getNextDomino();
-        if (nextDomino != -1)
+        for (int i = 0; i < dominoes.size(); ++i)
         {
-            std::cout << "Next domino: " << nextDomino << std::endl;
-            line.displayLine();
+            nextDominoMap[dominoes[i].first] = i;
         }
     }
+};
+
+int main(int argc, char *argv[])
+{
+    if (argc != 3)
+    {
+        std::cerr << "Usage: " << argv[0] << " <starting_domino_file> <rest_of_domino_file>" << std::endl;
+        return 1;
+    }
+
+    std::ifstream startingFile(argv[1]);
+    std::ifstream restOfFile(argv[2]);
+
+    if (!startingFile.is_open() || !restOfFile.is_open())
+    {
+        std::cerr << "Error opening the files." << std::endl;
+        return 1;
+    }
+
+    std::vector<std::pair<std::string, std::string>> dominoInput;
+    std::string firstDomino, secondDomino;
+
+    while (startingFile >> firstDomino >> secondDomino)
+    {
+        dominoInput.push_back({firstDomino, secondDomino});
+    }
+
+    while (restOfFile >> firstDomino >> secondDomino)
+    {
+        dominoInput.push_back({firstDomino, secondDomino});
+    }
+
+    DominoLine line(dominoInput);
+    line.displayLine();
 
     return 0;
 }
+
+// to run ./TaskB1 domino_data.txt domino_data.txt

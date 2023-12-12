@@ -1,71 +1,165 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <algorithm>
+#include <sstream>
 
-class Dominoes
+class DominoLine
 {
 private:
-    std::vector<std::pair<int, int>> dominoes;
+    std::vector<std::string> dominoes;
+    bool lineCompleted;
 
 public:
-    // Add a domino to the collection
-    void addDomino(int end1, int end2)
+    // Constructor with file paths
+    DominoLine(const std::string &startingFilePath, const std::string &restOfDominoFilePath)
     {
-        dominoes.push_back({end1, end2});
+        // Read starting domino from the file
+        std::ifstream startingFile(startingFilePath);
+        if (!startingFile.is_open())
+        {
+            std::cerr << "Error opening the starting domino file." << std::endl;
+            exit(1);
+        }
+
+        std::string startingDomino;
+        startingFile >> startingDomino;
+        dominoes.push_back(startingDomino);
+        startingFile.close();
+
+        // Read rest of the dominoes from the file
+        std::ifstream restOfFile(restOfDominoFilePath);
+        if (!restOfFile.is_open())
+        {
+            std::cerr << "Error opening the rest of the domino file." << std::endl;
+            exit(1);
+        }
+
+        std::string dominoValue;
+        while (restOfFile >> dominoValue)
+        {
+            dominoes.push_back(dominoValue);
+        }
+        restOfFile.close();
+
+        lineCompleted = false;
     }
 
-    // Find the length of the longest chain of dominoes
-    int longestChain()
+    // Member function to determine the next domino to be placed in the line to the right
+    std::string getNextDominoToRight()
     {
-        // Sort the dominoes based on both ends (worst-case guarantees)
-        std::sort(dominoes.begin(), dominoes.end(), [](const auto &a, const auto &b)
-                  { return std::min(a.first, a.second) < std::min(b.first, b.second); });
-
-        int n = dominoes.size();
-        std::vector<int> dp(n, 1);
-
-        // Dynamic programming to find the longest chain
-        for (int i = 1; i < n; ++i)
+        if (!lineCompleted)
         {
-            for (int j = 0; j < i; ++j)
+            std::string matchingSide = dominoes.back(); // The matching side is the rightmost side of the current line
+            auto it = std::find(dominoes.begin(), dominoes.end() - 1, matchingSide);
+
+            if (it != dominoes.end() - 1)
             {
-                if (std::min(dominoes[i].first, dominoes[i].second) >
-                    std::max(dominoes[j].first, dominoes[j].second))
-                {
-                    dp[i] = std::max(dp[i], dp[j] + 1);
-                }
+                // Found a domino with a matching side, add it to the line
+                std::string nextDomino = *(it + 1);
+                dominoes.push_back(nextDomino);
+                return nextDomino;
+            }
+            else
+            {
+                // No more matching dominoes, mark the line as completed
+                lineCompleted = true;
             }
         }
 
-        // Find the maximum length in the dp array
-        int maxLength = *std::max_element(dp.begin(), dp.end());
+        return ""; // Return an empty string if the line is completed or there are no more matching dominoes
+    }
 
-        // Print the dominos
-        std::cout << "Dominos: ";
-        for (int i = 0; i < maxLength; ++i)
+    // Member function to determine the next domino to be placed in the line to the left
+    std::string getNextDominoToLeft()
+    {
+        if (!lineCompleted && dominoes.size() > 1)
         {
-            std::cout << "(" << dominoes[i].first << ", " << dominoes[i].second << ") ";
+            std::string matchingSide = dominoes.front(); // The matching side is the leftmost side of the current line
+            auto it = std::find(dominoes.begin() + 1, dominoes.end(), matchingSide);
+
+            if (it != dominoes.end())
+            {
+                // Found a domino with a matching side, add it to the line
+                std::string nextDomino = *(it - 1);
+                dominoes.insert(dominoes.begin(), nextDomino);
+                return nextDomino;
+            }
+            else
+            {
+                // No more matching dominoes, mark the line as completed
+                lineCompleted = true;
+            }
+        }
+
+        return ""; // Return an empty string if the line is completed or there are no more matching dominoes
+    }
+
+    // Member function to determine if the line is completed
+    bool isLineCompleted() const
+    {
+        return lineCompleted;
+    }
+
+    // Member function to display the current line of dominoes
+    void displayLine() const
+    {
+        for (const std::string &domino : dominoes)
+        {
+            std::cout << domino << " ";
         }
         std::cout << std::endl;
-
-        return maxLength;
     }
 };
 
-int main()
+int main(int argc, char *argv[])
 {
-    Dominoes dominoCollection;
+    if (argc != 3)
+    {
+        std::cerr << "Usage: " << argv[0] << " <starting_domino_file> <rest_of_domino_file>" << std::endl;
+        return 1;
+    }
 
-    // Add dominoes to the collection
-    dominoCollection.addDomino(1, 2);
-    dominoCollection.addDomino(5, 3);
-    dominoCollection.addDomino(4, 8);
-    dominoCollection.addDomino(7, 6);
-    dominoCollection.addDomino(9, 10);
+    
 
-    // Find and print the length of the longest chain
-    int maxLength = dominoCollection.longestChain();
-    std::cout << "Length of the longest chain: " << maxLength << std::endl;
+    DominoLine line(argv[1], argv[2]);
+
+    // Interleaved steps of moving to the right and left
+    while (!line.isLineCompleted())
+    {
+        std::string nextDominoToRight = line.getNextDominoToRight();
+        std::string nextDominoToLeft = line.getNextDominoToLeft();
+
+        if (!nextDominoToRight.empty())
+        {
+            std::cout << nextDominoToRight << " ";
+        }
+
+        if (!nextDominoToLeft.empty())
+        {
+            std::cout << nextDominoToLeft << " ";
+        }
+    }
+
+    std::cout << std::endl;
+
+    std::ifstream restOfFile(argv[2]);
+    if (restOfFile.is_open())
+    {
+        std::string dominoValue;
+        while (restOfFile >> dominoValue)
+        {
+            std::cout << dominoValue << " ";
+        }
+        restOfFile.close();
+    }
+    else
+    {
+        std::cerr << "Error opening the rest of the domino file." << std::endl;
+        return 1;
+    }
+
+    std::cout << std::endl;
 
     return 0;
 }

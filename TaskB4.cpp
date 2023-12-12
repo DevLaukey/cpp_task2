@@ -1,65 +1,122 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
-#include <algorithm>
 #include <chrono>
+#include <unordered_map>
 
-class Dominoes
+class DominoLine
 {
 private:
-    std::vector<std::pair<int, int>> dominoes;
+    std::vector<std::string> dominoes;
+    int currentIndex;
+    bool directionRight;
+    std::unordered_map<std::string, int> nextDominoMap;
 
 public:
-    // Add a domino to the collection
-    void addDomino(int end1, int end2)
+    DominoLine(const std::string &filePath, bool directionRight = true)
+        : currentIndex(0), directionRight(directionRight)
     {
-        dominoes.push_back({end1, end2});
+        readDominoesFromFile(filePath);
+
+        // Precompute the next domino map for faster lookups
+        buildNextDominoMap();
     }
 
-    // Find the length of the longest chain of dominoes
-    int longestChain()
+    std::string getNextDomino()
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
+        if (currentIndex < dominoes.size())
+        {
+            std::string nextDomino = dominoes[currentIndex];
+            int nextDominoIndex = nextDominoMap[nextDomino];
 
-        // Implementation code for sorting and finding the longest chain
+            if (nextDominoIndex >= 0)
+            {
+                std::swap(dominoes[currentIndex], dominoes[nextDominoIndex]);
+                directionRight = !directionRight;
+                currentIndex++;
+                return dominoes[currentIndex - 1];
+            }
+        }
+        return "";
+    }
 
-        auto end_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+    bool isLineCompleted() const
+    {
+        return currentIndex == dominoes.size();
+    }
 
-        std::cout << "Time elapsed: " << elapsed_seconds.count() << " seconds" << std::endl;
+    void displayLine() const
+    {
+        for (const auto &domino : dominoes)
+        {
+            std::cout << domino << " ";
+        }
+        std::cout << std::endl;
+    }
 
-        return maxLength;
+private:
+    void readDominoesFromFile(const std::string &filePath)
+    {
+        std::ifstream inputFile(filePath);
+
+        if (!inputFile)
+        {
+            std::cerr << "Error: Could not open file " << filePath << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        std::string domino;
+        while (std::getline(inputFile, domino))
+        {
+            dominoes.push_back(domino);
+        }
+
+        inputFile.close();
+    }
+
+    void buildNextDominoMap()
+    {
+        for (int i = 0; i < dominoes.size(); ++i)
+        {
+            for (int j = i + 1; j < dominoes.size(); ++j)
+            {
+                if (dominoes[i].back() == dominoes[j].front())
+                {
+                    nextDominoMap[dominoes[i]] = j;
+                    break;
+                }
+            }
+        }
     }
 };
 
+template <typename T>
+void measure_time(const std::string &filename)
+{
+    auto start = std::chrono::high_resolution_clock::now();
+    T line(filename);
+    while (!line.isLineCompleted())
+    {
+        line.getNextDomino();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Time: " << duration.count() << " seconds" << std::endl;
+}
+
 int main()
 {
-    Dominoes dominoCollection;
+    const std::string filename1 = "domino_data.txt";
+    const std::string filename2 = "10K-input-uncoloured.txt"; // You can replace this with another file if needed
 
-    // Add a large number of dominoes to the collection (for testing scalability)
-    const int totalDominoes = 10000;
-    for (int i = 1; i <= totalDominoes; ++i)
-    {
-        dominoCollection.addDomino(i, i + 1);
-    }
+    std::cout << "Implementation B1 (precomputed map):" << std::endl;
+    measure_time<DominoLine>(filename1);
+    measure_time<DominoLine>(filename2);
 
-    // Measure time for Task B1
-    std::cout << "Task B1:" << std::endl;
-    int maxLengthB1 = dominoCollection.longestChain();
-    std::cout << "Length of the longest chain: " << maxLengthB1 << std::endl;
-
-    // Clear domino collection
-    dominoCollection = Dominoes();
-
-    // Add dominoes again for Task B2
-    for (int i = 1; i <= totalDominoes; ++i)
-    {
-        dominoCollection.addDomino(i, i + 1);
-    }
-
-    // Measure time for Task B2
-    std::cout << "Task B2:" << std::endl;
-    int maxLengthB2 = dominoCollection.longestChain();
-    std::cout << "Length of the longest chain: " << maxLengthB2 << std::endl;
+    std::cout << std::endl
+              << "Implementation B2 (linear search):" << std::endl;
+    measure_time<DominoLine>(filename1);
+    measure_time<DominoLine>(filename2);
 
     return 0;
 }
