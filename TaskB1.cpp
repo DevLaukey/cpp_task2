@@ -1,74 +1,77 @@
 #include <iostream>
 #include <vector>
-#include <algorithm>
 
-class Dominoes
+class DominoLine
 {
 private:
-    std::vector<std::pair<int, int>> dominoes;
+    std::vector<int> dominoes;
+    int currentIndex;
+    bool directionRight;
 
 public:
-    // Add a domino to the collection
-    void addDomino(int end1, int end2)
+    DominoLine(int startingDomino, const std::vector<int> &restOfDominoes, bool directionRight = true)
     {
-        dominoes.push_back({end1, end2});
+        dominoes.push_back(startingDomino);
+        dominoes.insert(dominoes.end(), restOfDominoes.begin(), restOfDominoes.end());
+        currentIndex = 0;
+        this->directionRight = directionRight;
     }
 
-    // Find the length of the longest chain of dominoes
-    int longestChain()
+    int getNextDomino()
     {
-        // Sort the dominoes based on the second end only (more efficient)
-        std::sort(dominoes.begin(), dominoes.end(), [](const auto &a, const auto &b)
-                  { return a.second < b.second; });
-
-        int n = dominoes.size();
-        std::vector<int> dp(n, 1);
-
-        // Dynamic programming to find the longest chain
-        for (int i = 1; i < n; ++i)
+        if (currentIndex < dominoes.size())
         {
-            for (int j = 0; j < i; ++j)
+            int nextDomino = dominoes[currentIndex];
+            int matchingSide = directionRight ? nextDomino : dominoes[currentIndex - 1];
+            int nextIndex = -1;
+
+            for (int i = 0; i < dominoes.size(); ++i)
             {
-                if (dominoes[i].first > dominoes[j].second)
+                if (dominoes[i] == matchingSide)
                 {
-                    dp[i] = std::max(dp[i], dp[j] + 1);
+                    nextIndex = i;
+                    break;
                 }
             }
-        }
 
-        // Find the maximum length in the dp array
-        int maxLength = *std::max_element(dp.begin(), dp.end());
-
-        // Print the dominos in the longest chain
-        std::cout << "Dominos in the longest chain: ";
-        for (int i = n - 1; i >= 0; --i)
-        {
-            if (dp[i] == maxLength)
+            if (nextIndex >= 0)
             {
-                std::cout << "(" << dominoes[i].first << ", " << dominoes[i].second << ") ";
-                --maxLength;
+                std::swap(dominoes[currentIndex], dominoes[nextIndex]);
+                directionRight = !directionRight;
+                currentIndex++;
+                return dominoes[currentIndex - 1];
             }
         }
-        std::cout << std::endl;
+        return -1;
+    }
 
-        return *std::max_element(dp.begin(), dp.end());
+    bool isLineCompleted()
+    {
+        return currentIndex == dominoes.size();
+    }
+
+    void displayLine()
+    {
+        for (int i = 0; i < dominoes.size(); ++i)
+        {
+            std::cout << dominoes[i] << " ";
+        }
+        std::cout << std::endl;
     }
 };
 
 int main()
 {
-    Dominoes dominoCollection;
-
-    // Add dominoes to the collection
-    dominoCollection.addDomino(1, 2);
-    dominoCollection.addDomino(5, 3);
-    dominoCollection.addDomino(4, 8);
-    dominoCollection.addDomino(7, 6);
-    dominoCollection.addDomino(9, 10);
-
-    // Find and print the length of the longest chain
-    int maxLength = dominoCollection.longestChain();
-    std::cout << "Length of the longest chain: " << maxLength << std::endl;
+    DominoLine line(1, {2, 3, 4, 5, 6, 7, 8, 9, 10});
+    while (!line.isLineCompleted())
+    {
+        int nextDomino = line.getNextDomino();
+        if (nextDomino != -1)
+        {
+            std::cout << "Next domino: " << nextDomino << std::endl;
+            line.displayLine();
+        }
+    }
 
     return 0;
 }

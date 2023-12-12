@@ -1,57 +1,54 @@
 #include <iostream>
 #include <vector>
 
-class DominoLine {
+class DominoLine
+{
 private:
     std::vector<int> dominoes;
+    int currentIndex;
 
 public:
-    DominoLine(int startingDomino, const std::vector<int>& restOfDominoes) {
+    DominoLine(int startingDomino, const std::vector<int> &restOfDominoes)
+    {
         dominoes.push_back(startingDomino);
         dominoes.insert(dominoes.end(), restOfDominoes.begin(), restOfDominoes.end());
+        currentIndex = 0;
     }
 
-    int getNextDominoRight() {
-        if (dominoes.empty()) {
-            return -1; // No more dominoes to add
+    int getNextDomino()
+    {
+        if (currentIndex < dominoes.size())
+        {
+            int nextDomino = dominoes[currentIndex];
+            currentIndex++;
+            return nextDomino;
         }
-
-        int nextDomino = dominoes.back() + 1;
-        dominoes.push_back(nextDomino);
-        return nextDomino;
+        return -1; // No more dominoes to add
     }
 
-    bool isLineCompleted() {
-        // Check if all dominoes have been added
-        return dominoes.empty();
+    bool isLineCompleted()
+    {
+        return currentIndex == dominoes.size();
     }
 
-    void displayLine() {
-        for (int domino : dominoes) {
-            std::cout << domino << " ";
+    void displayLine()
+    {
+        for (int i = 0; i <= currentIndex; i++)
+        {
+            std::cout << dominoes[i] << " ";
         }
         std::cout << std::endl;
     }
-    
 };
 
 int main()
 {
-    // Example usage for the DominoLine class
-    std::vector<int> restOfDominoes = {2, 3, 4, 5};
-
-    // Initialize with starting domino (1) and the rest of the collection
-    DominoLine dominoLine(1, restOfDominoes);
-
-    // Build the line by adding dominoes to the right
-    while (!dominoLine.isLineCompleted())
+    DominoLine line(1, {2, 3, 4, 5, 6, 7, 8, 9, 10});
+    while (!line.isLineCompleted())
     {
-        int nextDomino = dominoLine.getNextDominoRight();
-        if (nextDomino != -1)
-        {
-            std::cout << "Added domino to the right: " << nextDomino << std::endl;
-            dominoLine.displayLine(); // Display the line after each addition
-        }
+        int nextDomino = line.getNextDomino();
+        std::cout << "Next domino: " << nextDomino << std::endl;
+        line.displayLine();
     }
 
     return 0;
